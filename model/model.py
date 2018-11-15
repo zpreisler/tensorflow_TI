@@ -13,8 +13,8 @@ class network(object):
 
         self.build_graph(inputs,output_dim=self.outputs.shape[-1],name=name)
 
-        self.loss=self.__loss()
-        self.train=self.__train()
+        self.loss=self.__loss
+        self.train=self.__train
 
     def build_graph(self,inputs,output_dim,name):
         with tf.variable_scope(name):
@@ -34,6 +34,7 @@ class network(object):
 
             self.output_layer=self.dense_3
 
+    @property
     def __loss(self):
         if not self._loss:
             self._loss=tf.reduce_mean(
@@ -49,13 +50,14 @@ class network(object):
             self._optimizer=tf.train.AdamOptimizer(learning_rate=self.rate)
         return self._optimizer
 
+    @property
     def __train(self):
         if not self._train:
             self._train=self.optimizer.minimize(self.loss)
         return self._train
 
 class flow(object):
-    def __init__(self,name='flow'):
+    def __init__(self,name='flow',batch=512,n=1024):
         from .data_pipeline import data_pipeline,data_pipeline_handle
 
         self.c=data_feeder(files='eos/fluid*.conf',
@@ -67,19 +69,46 @@ class flow(object):
         inputs=self.data[:,:2] #epsilon,pressure
         outputs=self.data[:,2:] #en,rho
 
-        #next_element,self.init_train_op,self.init_eval_op=data_pipeline(inputs=inputs,
-        #        outputs=outputs)
         self.handle=tf.placeholder(tf.string,shape=[])
 
         next_element,self.train_iterator,self.eval_iterator=data_pipeline_handle(self.handle,inputs=inputs,
-                outputs=outputs)
+                outputs=outputs,batch_size=batch,n=n)
 
         """
         Network
         """
         self.nn=network(next_element['inputs'],
                 next_element['outputs'],
-                name="Kagami")
+                name='Kagami')
+
+class test_suite(object):
+    def __init__(self,name='test_suite',batch=512,n_samples=2048,n=1024):
+        from .data_pipeline import data_pipeline,data_pipeline_handle
+        from .landscape import landscape
+        from numpy import linspace
+        from numpy.random import uniform
+
+        self.rugged=landscape()
+        
+        inputs=uniform(-1,2,(2,n_samples))
+        outputs=self.rugged.y(inputs)
+
+        print(inputs,inputs.shape)
+        print(outputs,outputs.shape)
+
+        self.handle=tf.placeholder(tf.string,shape=[])
+
+        next_element,self.train_iterator,self.eval_iterator=data_pipeline_handle(self.handle,inputs=inputs,
+                outputs=outputs,batch_size=batch,n=n)
+
+        self._inputs=next_element['inputs']
+        self._outputs=next_element['outputs']
+        """
+        Network
+        """
+        #self.nn=network(next_element['inputs'],
+        #        next_element['outputs'],
+        #        name='Asuna')
 
 from myutils import configuration,data
 class data_feeder(configuration):

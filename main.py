@@ -5,11 +5,20 @@ from __future__ import print_function
 import tensorflow as tf
 def main(argv):
     from pprint import pprint
-    from matplotlib.pyplot import figure,show,plot,xlabel,ylabel
+    from numpy import array
+    from matplotlib.pyplot import subplots,figure,show,plot,xlabel,ylabel
     from model.model import network,data_feeder,flow
     from model.plot import plot_predictions
+    from argparse import ArgumentParser
 
-    fl=flow()
+    p=ArgumentParser()
+    p.add_argument("-a","--learning_rate",default=1e-3)
+    p.add_argument("-s","--steps",default=1000)
+    p.add_argument("-b","--batch",default=512)
+    p.add_argument("-n","--eval_length",default=1024)
+    args=p.parse_args()
+
+    fl=flow(batch=args.batch,n=args.eval_length)
 
     rho=fl.c.get('.rho')
     en=fl.c.get('.en')
@@ -23,7 +32,7 @@ def main(argv):
         session.run(fl.train_iterator.initializer)
         session.run(fl.eval_iterator.initializer)
 
-        training_handle=session.run(fl.train_iterator.string_handle())
+        train_handle=session.run(fl.train_iterator.string_handle())
         eval_handle=session.run(fl.eval_iterator.string_handle())
 
         try:
@@ -31,42 +40,29 @@ def main(argv):
         except tf.errors.NotFoundError:
             pass
 
-        for i in range(250):
+        for i in range(args.steps+1):
             l,_=session.run([fl.nn.loss,fl.nn.train],
-                    feed_dict={fl.nn.rate: 1e-3,
-                        fl.handle: training_handle}
+                    feed_dict={fl.nn.rate: args.learning_rate,
+                        fl.handle: train_handle}
                     )
             if i%500 is 0:
                 print(i,l)
 
         saver.save(session,"log/last.ckpt")
 
-        a,b=session.run([fl.nn.inputs,fl.nn.output_layer],
-                feed_dict={fl.handle: eval_handle})
+        a=session.run([fl.nn.inputs,fl.nn.output_layer],
+                feed_dict={fl.handle: eval_handle}
+                )
 
-        #session.run(fl.init_eval_op)
-        #c=session.run([fl.nn.inputs,fl.nn.output_layer])
-        #print(a,b)
+    fig,ax=subplots()
+    plot(epsilon,en,alpha=.5)
+    plot_predictions(array(a),0)
 
-    #plot_predictions(c)
+    fig,ax=subplots()
+    plot(epsilon,rho,alpha=.5)
+    plot_predictions(array(a),1)
 
-    #figure()
-    #plot(epsilon,rho,"-",alpha=0.5)
-    
-    #plot(fl.data_all[:,0],fl.data_all[:,3],',',alpha=0.1)
-    
-    #plot(a[:,0],b[:,1])
-    #xlabel(r"$\beta$")
-    #ylabel(r"$\rho$")
-
-    #figure()
-    #plot(epsilon,en,"-",alpha=0.5)
-    #plot(fl.data_all[:,0],fl.data_all[:,2],',',alpha=0.1)
-    #plot(a[:,0],b[:,0])
-
-    #xlabel(r"$\beta$")
-    #ylabel(r"$\rho$")
-    #show()
+    show()
 
 if __name__=="__main__":
     tf.app.run()
