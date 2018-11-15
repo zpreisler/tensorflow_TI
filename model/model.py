@@ -1,21 +1,22 @@
+import tensorflow as tf
 class network(object):
     def __init__(self,inputs,outputs,name='network'):
-        import tensorflow as tf
         print('Initialize %s'%name)
 
         self.rate=tf.placeholder(tf.float64)
 
         self.inputs=inputs
         self.outputs=outputs
+        self._loss=None
+        self._optimizer=None
+        self._train=None
 
-        self.build_graph(inputs,output_dim=outputs.shape[-1],name=name)
+        self.build_graph(inputs,output_dim=self.outputs.shape[-1],name=name)
 
-        self.define_loss(outputs)
-        self.define_optimizer()
-        self.define_training()
+        self.loss=self.__loss()
+        self.train=self.__train()
 
     def build_graph(self,inputs,output_dim,name):
-        import tensorflow as tf
         with tf.variable_scope(name):
             self.dense_1=tf.layers.dense(inputs=inputs,
                     units=16,
@@ -33,25 +34,29 @@ class network(object):
 
             self.output_layer=self.dense_3
 
-    def define_loss(self,output_layer):
-        import tensorflow as tf
-        self.loss=tf.reduce_mean(
-                tf.nn.l2_loss(
-                    self.output_layer-output_layer
+    def __loss(self):
+        if not self._loss:
+            self._loss=tf.reduce_mean(
+                    tf.nn.l2_loss(
+                        self.output_layer-self.outputs
+                        )
                     )
-                )
+        return self._loss
 
-    def define_optimizer(self,name="optimizer"):
-        import tensorflow as tf
-        self.optimizer=tf.train.AdamOptimizer(learning_rate=self.rate)
+    @property
+    def optimizer(self):
+        if not self._optimizer:
+            self._optimizer=tf.train.AdamOptimizer(learning_rate=self.rate)
+        return self._optimizer
 
-    def define_training(self):
-        self.train=self.optimizer.minimize(self.loss)
+    def __train(self):
+        if not self._train:
+            self._train=self.optimizer.minimize(self.loss)
+        return self._train
 
 class flow(object):
     def __init__(self,name='flow'):
-        import tensorflow as tf
-        from .data_pipeline import data_pipeline
+        from .data_pipeline import data_pipeline,data_pipeline_handle
 
         self.c=data_feeder(files='eos/fluid*.conf',
                 add_data=['.en','.rho'])
@@ -62,56 +67,20 @@ class flow(object):
         inputs=self.data[:,:2] #epsilon,pressure
         outputs=self.data[:,2:] #en,rho
 
-        next_element,self.init_train_op,self.init_eval_op=data_pipeline(inputs=inputs,
+        #next_element,self.init_train_op,self.init_eval_op=data_pipeline(inputs=inputs,
+        #        outputs=outputs)
+        self.handle=tf.placeholder(tf.string,shape=[])
+
+        next_element,self.train_iterator,self.eval_iterator=data_pipeline_handle(self.handle,inputs=inputs,
                 outputs=outputs)
 
         """
         Network
         """
-        self.nn=network(next_element['inputs'],next_element['outputs'],name="Kagami")
+        self.nn=network(next_element['inputs'],
+                next_element['outputs'],
+                name="Kagami")
 
-#    def data_pipeline(self,inputs=None,outputs=None,batch=2048,n=1024):
-#        import tensorflow as tf
-#        from numpy import linspace,zeros,array
-#        """
-#        train dataset
-#        """
-#        length=len(inputs)
-#        if batch>length:
-#            batch=length
-#
-#        dataset=tf.data.Dataset.from_tensor_slices( 
-#                {'inputs': inputs,
-#                    'outputs': outputs}
-#                )
-#        train_dataset=dataset.repeat().shuffle(length).batch(batch)
-#
-#        iterator=tf.data.Iterator.from_structure(
-#                train_dataset.output_types,
-#                train_dataset.output_shapes)
-#        next_element=iterator.get_next()
-#        init_train_op=iterator.make_initializer(train_dataset)
-#
-#        """
-#        eval dataset
-#        """
-#
-#        x=[]
-#        for k in inputs.transpose():
-#            x+=[linspace(k.min(),k.max(),n)]
-#        x=array(x).transpose()
-#        z=zeros((n,outputs.shape[-1]))
-#
-#        dataset=tf.data.Dataset.from_tensor_slices( 
-#                {'inputs': x,
-#                    'outputs': z}
-#                )
-#        eval_dataset=dataset.batch(n)
-#
-#        init_eval_op=iterator.make_initializer(eval_dataset)
-#
-#        return next_element,init_train_op,init_eval_op
-#
 from myutils import configuration,data
 class data_feeder(configuration):
     def __init__(self,files,add_data=[],delimiter=[':']):
