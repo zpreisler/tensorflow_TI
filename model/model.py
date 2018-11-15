@@ -19,12 +19,12 @@ class network(object):
     def build_graph(self,inputs,output_dim,name):
         with tf.variable_scope(name):
             self.dense_1=tf.layers.dense(inputs=inputs,
-                    units=16,
+                    units=32,
                     activation=tf.nn.tanh,
                     name='d1')
 
             self.dense_2=tf.layers.dense(inputs=self.dense_1,
-                    units=8,
+                    units=24,
                     activation=tf.nn.tanh,
                     name='d2')
 
@@ -71,8 +71,10 @@ class flow(object):
 
         self.handle=tf.placeholder(tf.string,shape=[])
 
-        next_element,self.train_iterator,self.eval_iterator=data_pipeline_handle(self.handle,inputs=inputs,
-                outputs=outputs,batch_size=batch,n=n)
+        next_element,self.train_iterator,self.eval_iterator=data_pipeline_handle(self.handle,
+                inputs=inputs,
+                outputs=outputs,
+                batch_size=batch,n=n)
 
         """
         Network
@@ -90,7 +92,7 @@ class test_suite(object):
 
         self.rugged=landscape()
         
-        inputs=uniform(-1,2,(n_samples,2))
+        inputs=uniform(-1,2,(n_samples,3))
         outputs=self.rugged.y(inputs)
 
         print(inputs.shape)
@@ -98,11 +100,12 @@ class test_suite(object):
 
         self.handle=tf.placeholder(tf.string,shape=[])
 
-        next_element,self.train_iterator,self.eval_iterator=data_pipeline_handle(self.handle,inputs=inputs,
-                outputs=outputs,batch_size=batch,n=n)
+        next_element,self.train_iterator,self.eval_iterator=data_pipeline_handle(self.handle,
+                inputs=inputs,
+                outputs=outputs,
+                fce=self.rugged.y,
+                batch_size=batch,n=n)
 
-        self._inputs=next_element['inputs']
-        self._outputs=next_element['outputs']
         """
         Network
         """

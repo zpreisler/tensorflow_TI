@@ -39,7 +39,7 @@ def data_pipeline(inputs=None,outputs=None,batch=512,n=1024):
 
     return next_element,init_train_op,init_eval_op
 
-def data_pipeline_handle(handle,inputs=None,outputs=None,batch_size=512,n=1024):
+def data_pipeline_handle(handle,inputs=None,outputs=None,fce=None,batch_size=512,n=1024):
     """
     batch: batch size
     n: length of the eval
@@ -71,7 +71,11 @@ def data_pipeline_handle(handle,inputs=None,outputs=None,batch_size=512,n=1024):
     for k in inputs.transpose():
         x+=[linspace(k.min(),k.max(),n)]
     x=array(x).transpose()
-    z=zeros((n,outputs.shape[-1]))
+    #z=zeros((n,outputs.shape[-1]))
+    if not fce:
+        z=zeros((x.shape))
+    else:
+        z=fce(x)
 
     dataset=tf.data.Dataset.from_tensor_slices( 
             {'inputs': x,
