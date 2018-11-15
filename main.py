@@ -53,6 +53,7 @@ def main(argv):
         a=session.run([fl.nn.inputs,fl.nn.output_layer],
                 feed_dict={fl.handle: eval_handle}
                 )
+        print(array(a[0]).shape)
 
     fig,ax=subplots()
     plot(epsilon,en,alpha=.5)

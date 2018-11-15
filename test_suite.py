@@ -21,16 +21,14 @@ def main(argv):
     p.add_argument("-n","--eval_length",default=1024)
     args=p.parse_args()
 
-    rugged=landscape()
-    x=linspace(-1,2,1000)
-    x=uniform(-1,2,(3,33))
-    y=rugged.y(x)
+    #rugged=landscape()
+    #x=linspace(-1,2,1000)
+    #x=uniform(-1,2,(1024,1))
+    #y=rugged.y(x)
 
-    print(x.shape,y.shape)
-
-    figure()
-    plot(x,y,',')
-    show()
+    #figure()
+    #plot(x,y,',')
+    #show()
 
     suit=test_suite()
     init_vars=tf.group(tf.global_variables_initializer())
@@ -43,7 +41,7 @@ def main(argv):
         train_handle=session.run(suit.train_iterator.string_handle())
         eval_handle=session.run(suit.eval_iterator.string_handle())
 
-        a=session.run(suit._inputs,
+        a=session.run(suit.nn.inputs,
                 feed_dict={suit.handle: train_handle}
                 )
         print(a,a.shape)

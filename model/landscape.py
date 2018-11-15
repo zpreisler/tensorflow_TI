@@ -21,7 +21,7 @@ class landscape:
         y=0
         for h,mu,sigma in self.v:
             y+=h*self.gaussian(x,mu,sigma)
-        noise=normal(0.0,s,len(y))
+        noise=normal(0.0,s,x.shape)
         return y/self.n+noise
 
     def gaussian(self,x,mu,sigma):

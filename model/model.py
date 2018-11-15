@@ -90,11 +90,11 @@ class test_suite(object):
 
         self.rugged=landscape()
         
-        inputs=uniform(-1,2,(2,n_samples))
+        inputs=uniform(-1,2,(n_samples,2))
         outputs=self.rugged.y(inputs)
 
-        print(inputs,inputs.shape)
-        print(outputs,outputs.shape)
+        print(inputs.shape)
+        print(outputs.shape)
 
         self.handle=tf.placeholder(tf.string,shape=[])
 
@@ -106,9 +106,9 @@ class test_suite(object):
         """
         Network
         """
-        #self.nn=network(next_element['inputs'],
-        #        next_element['outputs'],
-        #        name='Asuna')
+        self.nn=network(next_element['inputs'],
+                next_element['outputs'],
+                name='Asuna')
 
 from myutils import configuration,data
 class data_feeder(configuration):
