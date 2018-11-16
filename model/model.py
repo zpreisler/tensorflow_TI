@@ -84,7 +84,7 @@ class flow(object):
                 name='Kagami')
 
 class test_suite(object):
-    def __init__(self,name='test_suite',batch=512,n_samples=2048,n=1024):
+    def __init__(self,name='test_suite',batch_size=512,n_samples=2048,n_eval=1024):
         from .data_pipeline import data_pipeline,data_pipeline_handle
         from .landscape import landscape
         from numpy import linspace
@@ -92,7 +92,7 @@ class test_suite(object):
 
         self.rugged=landscape()
         
-        inputs=uniform(-1,2,(n_samples,3))
+        inputs=uniform(-1,2,(n_samples,1))
         outputs=self.rugged.y(inputs)
 
         print(inputs.shape)
@@ -104,7 +104,7 @@ class test_suite(object):
                 inputs=inputs,
                 outputs=outputs,
                 fce=self.rugged.y,
-                batch_size=batch,n=n)
+                batch_size=batch_size,n=n_eval)
 
         """
         Network

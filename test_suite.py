@@ -4,9 +4,12 @@ from __future__ import division
 from __future__ import print_function
 import tensorflow as tf
 def main(argv):
+    """
+    Test suite
+    """
     from pprint import pprint
     from numpy import array
-    from matplotlib.pyplot import subplots,figure,show,plot,xlabel,ylabel
+    from matplotlib.pyplot import subplots,figure,show,plot,xlabel,ylabel,savefig,close,close,ylim,xlim
     from model.model import network,data_feeder,test_suite
     from model.plot import plot_predictions
     from model.landscape import landscape
@@ -17,20 +20,15 @@ def main(argv):
     p=ArgumentParser()
     p.add_argument("-a","--learning_rate",default=1e-3)
     p.add_argument("-s","--steps",type=int,default=1000)
-    p.add_argument("-b","--batch",default=512)
-    p.add_argument("-n","--eval_length",default=1024)
+    p.add_argument("-b","--batch_size",type=int,default=512)
+    p.add_argument("-n","--n_eval",type=int,default=1024)
+    p.add_argument("-N","--n_samples",type=int,default=1024)
+    p.add_argument("-f","--plot_frequency",type=int,default=100)
     args=p.parse_args()
 
-    #rugged=landscape()
-    #x=linspace(-1,2,1000)
-    #x=uniform(-1,2,(1024,1))
-    #y=rugged.y(x)
-
-    #figure()
-    #plot(x,y,',')
-    #show()
-
-    suit=test_suite()
+    suit=test_suite(batch_size=args.batch_size,
+            n_eval=args.n_eval,
+            n_samples=args.n_samples)
     init_vars=tf.group(tf.global_variables_initializer())
     saver=tf.train.Saver()
 
@@ -42,23 +40,39 @@ def main(argv):
         train_handle=session.run(suit.train_iterator.string_handle())
         eval_handle=session.run(suit.eval_iterator.string_handle())
 
+        count=0
         for i in range(args.steps+1):
             l,_=session.run([suit.nn.loss,suit.nn.train],
                     feed_dict={suit.nn.rate: args.learning_rate,
                         suit.handle: train_handle}
                     )
-            if i%500 is 0:
+            if i%args.plot_frequency is 0:
                 print(i,l)
+                a,b,c=session.run([suit.nn.inputs,suit.nn.outputs,suit.nn.output_layer],
+                        feed_dict={suit.handle: eval_handle}
+                        )
+
+                fig,ax=subplots()
+                ax.plot(a,b,"k-")
+                ax.plot(a,c)
+                ax.set_ylim(-4.5,-0.5)
+                ax.set_title("step {:d}".format(i),fontsize=10)
+
+                savefig("log/{:03d}.png".format(count))
+                close(fig)
+
+                count+=1
 
         saver.save(session,"log/last.ckpt")
 
         a,b,c=session.run([suit.nn.inputs,suit.nn.outputs,suit.nn.output_layer],
                 feed_dict={suit.handle: eval_handle}
                 )
-    figure()
-    plot(a,b)
-    plot(a,c)
-    show()
+
+        figure()
+        plot(a,b)
+        plot(a,c)
+        show()
     
 if __name__=="__main__":
     tf.app.run()
